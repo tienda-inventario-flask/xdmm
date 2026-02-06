@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación Digital - J.R.F.P.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-primario: #002855;
+            --color-secundario: #C5911E;
+            --fondo-gris: #f4f7f6;
+        }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--fondo-gris); margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; }
+        .mobile-container { background: white; width: 100%; max-width: 420px; box-shadow: 0 0 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        
+        header { background: var(--color-primario); color: white; padding: 30px 20px 20px; text-align: center; border-bottom: 4px solid var(--color-secundario); border-radius: 0 0 20px 20px; }
+        .logo-img { width: 100px; height: 100px; object-fit: contain; background: white; border-radius: 50%; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 15px; }
+        .institucion-titulo { font-family: 'Playfair Display', serif; font-size: 16px; text-transform: uppercase; margin: 0; }
+        
+        .subtitulo-registro { background-color: var(--color-secundario); color: var(--color-primario); font-weight: bold; text-transform: uppercase; font-size: 12px; display: inline-block; padding: 5px 15px; border-radius: 20px; position: relative; top: -15px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        .contenido { padding: 30px 25px; text-align: center; flex-grow: 1; }
+        .estado-verificado { color: #2e7d32; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; gap: 5px; }
+        .estado-icono { width: 8px; height: 8px; background-color: #2e7d32; border-radius: 50%; box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.2); }
+
+        .bloque-dato { margin-bottom: 25px; text-align: left; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .etiqueta { display: block; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .valor { font-size: 18px; color: var(--color-primario); font-weight: 500; display: block; }
+        .valor-destacado { font-size: 22px; font-weight: 700; color: #000; }
+        
+        /* Estilo especial para el número de carnet en móvil */
+        .dato-carnet {
+            background-color: #f0f4f8; padding: 10px; border-left: 4px solid var(--color-secundario); border-radius: 4px; margin-bottom: 25px; text-align: left;
+        }
+
+        footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; }
+        .bg-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; opacity: 0.03; z-index: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-container">
+        <img src="logo_defensa.jpg" class="bg-watermark">
+
+        <header>
+            <img src="logo_defensa.jpg" alt="Logo Ministerio" class="logo-img">
+            <h1 class="institucion-titulo">Junta de Retiro y Fondo de Pensiones de las Fuerzas Armadas</h1>
+        </header>
+
+        <div style="text-align: center;">
+            <span class="subtitulo-registro">REGISTRO OFICIAL DE PERSONAL</span>
+        </div>
+
+        <div class="contenido">
+            
+            <div class="estado-verificado">
+                <div class="estado-icono"></div>
+                PERFIL VERIFICADO DIGITALMENTE
+            </div>
+
+            <div class="dato-carnet">
+                <span class="etiqueta" style="color: var(--color-primario);">NÚMERO DE CARNET</span>
+                <span class="valor" style="font-weight: bold;" id="data-num-carnet">---</span>
+            </div>
+
+            <div class="bloque-dato">
+                <span class="etiqueta">RANGO / GRADO</span>
+                <span class="valor valor-destacado" id="data-rango">---</span>
+            </div>
+
+            <div class="bloque-dato">
+                <span class="etiqueta">NOMBRE COMPLETO</span>
+                <span class="valor" id="data-nombre">---</span>
+            </div>
+
+            <div class="bloque-dato">
+                <span class="etiqueta">DOCUMENTO DE IDENTIDAD (CÉDULA)</span>
+                <span class="valor" id="data-cedula">---</span>
+            </div>
+            
+        </div>
+
+        <footer>
+            Ministerio de Defensa - República Dominicana<br>
+            Sistema de Validación Digital Segura
+        </footer>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if(params.has('nombre')) document.getElementById('data-nombre').innerText = params.get('nombre').toUpperCase();
+            if(params.has('cedula')) document.getElementById('data-cedula').innerText = params.get('cedula');
+            if(params.has('rango')) document.getElementById('data-rango').innerText = params.get('rango').toUpperCase();
+            
+            // Leemos el nuevo parámetro num_carnet
+            if(params.has('num_carnet')) {
+                document.getElementById('data-num-carnet').innerText = params.get('num_carnet');
+            } else {
+                document.getElementById('data-num-carnet').innerText = "NO ESPECIFICADO";
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Identificación Militar</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --azul-militar: #0a2342;
+            --dorado: #c5a059;
+            --rojo-patria: #ce1126;
+            --blanco: #ffffff;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            background-image: radial-gradient(#dbe1e8 1px, transparent 1px);
+            background-size: 20px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .columna-izquierda { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 30px; }
+        .panel-control, .panel-bd { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .panel-control h3 { color: var(--azul-militar); margin-top: 0; border-left: 5px solid var(--dorado); padding-left: 15px; font-family: 'Cinzel', serif; }
+
+        label { font-size: 0.85rem; color: #666; font-weight: 500; margin-top: 15px; display: block; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-top: 5px; box-sizing: border-box; }
+        input:focus { border-color: var(--azul-militar); outline: none; }
+
+        button { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--azul-militar), #1c3d6e); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 25px; transition: transform 0.2s; }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 15px; }
+        th { background: var(--azul-militar); color: white; padding: 8px; text-align: left; }
+        td { padding: 8px; border-bottom: 1px solid #eee; color: #333; }
+
+        /* CARNET STYLE */
+        .carnet-wrapper { perspective: 1000px; margin-top: 20px; }
+        .carnet { width: 500px; height: 315px; background: #fff; border-radius: 15px; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.2); border: 1px solid #ccc; display: none; }
+        .marca-agua { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; opacity: 0.08; pointer-events: none; }
+        
+        .header-carnet { background-color: var(--azul-militar); height: 85px; display: flex; align-items: center; padding: 0 20px; border-bottom: 3px solid var(--dorado); position: relative; z-index: 1; }
+        .logo-oficial { width: 60px; margin-right: 15px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .textos-header h1 { font-family: 'Cinzel', serif; font-size: 14px; margin: 0; color: white; }
+        .textos-header h2 { font-family: 'Roboto', sans-serif; font-size: 10px; color: rgba(255,255,255,0.8); margin: 5px 0 0 0; text-transform: uppercase; }
+        
+        /* Nuevo: Estilo para el número de carnet en la tarjeta */
+        .num-carnet-badge {
+            position: absolute; right: 20px; top: 10px;
+            background: var(--dorado); color: var(--azul-militar);
+            padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .bandera-strip { height: 4px; display: flex; width: 100%; }
+        .b-azul { background: #002D62; flex: 1; } .b-blanco { background: white; flex: 1; } .b-rojo { background: #CE1126; flex: 1; }
+        
+        .body-carnet { padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; height: calc(100% - 110px); position: relative; z-index: 1; }
+        .info-col { flex: 1; }
+        .etiqueta { font-size: 10px; color: #777; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;}
+        .valor { font-size: 18px; color: var(--azul-militar); font-weight: 700; display: block; border-bottom: 1px solid #eee; padding-bottom: 2px; width: 90%; margin-bottom: 15px; }
+        
+        .qr-col { width: 110px; text-align: center; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        .leyenda-qr { font-size: 9px; color: #555; margin-top: 5px; font-weight: 500; }
+        .footer-carnet { position: absolute; bottom: 0; width: 100%; height: 15px; background: var(--azul-militar); }
+        #mensaje-estado { margin-top: 10px; text-align: center; font-size: 13px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="columna-izquierda">
+        <div class="panel-control">
+            <h3>Registro de Personal</h3>
+            
+            <label>NÚMERO DE CARNET</label>
+            <input type="text" id="inputNumCarnet" placeholder="Ej: 19845">
+
+            <label>GRADO / RANGO</label>
+            <input type="text" id="inputRango" placeholder="Ej: CAPITÁN DE NAVÍO">
+
+            <label>NOMBRE COMPLETO</label>
+            <input type="text" id="inputNombre" placeholder="Ej: JUAN PÉREZ">
+
+            <label>DOCUMENTO DE IDENTIDAD (CÉDULA)</label>
+            <input type="text" id="inputCedula" placeholder="000-0000000-0">
+
+            <button onclick="procesarRegistro()" id="btnGenerar">EMITIR Y GUARDAR</button>
+            <div id="mensaje-estado"></div>
+        </div>
+
+        <div class="panel-bd">
+            <h3>Base de Datos (Nube)</h3>
+            <table id="tablaHistorial">
+                <thead>
+                    <tr>
+                        <th>N° Carnet</th>
+                        <th>Nombre</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="3">Conectando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="carnet-wrapper">
+        <div class="carnet" id="vistaCarnet">
+            <img src="logo_defensa.jpg" class="marca-agua">
+            
+            <div class="header-carnet">
+                <img src="logo_defensa.jpg" class="logo-oficial">
+                <div class="textos-header">
+                    <h1>JUNTA DE RETIRO Y FONDO DE PENSIONES</h1>
+                    <h2>FUERZAS ARMADAS DE LA REPÚBLICA DOMINICANA</h2>
+                    <div class="num-carnet-badge" id="verNumCarnetBadge">N° ---</div>
+                </div>
+            </div>
+            
+            <div class="bandera-strip"><div class="b-azul"></div><div class="b-blanco"></div><div class="b-rojo"></div></div>
+
+            <div class="body-carnet">
+                <div class="info-col">
+                    <span class="etiqueta">Rango</span><span class="valor" id="verRango">---</span>
+                    <span class="etiqueta">Nombre</span><span class="valor" id="verNombre">---</span>
+                    <span class="etiqueta">Cédula</span><span class="valor" id="verCedula">---</span>
+                </div>
+                <div class="qr-col">
+                    <div id="contenedor-qr"></div>
+                    <div class="leyenda-qr">VALIDACIÓN OFICIAL</div>
+                </div>
+            </div>
+            <div class="footer-carnet"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://jqmgwaxqdxdozfuvouzz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxbWd3YXhxZHhkb3pmdXZvdXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzMTYxMDEsImV4cCI6MjA4NTg5MjEwMX0.8pW0kpahzKOODTinKxFrcLmhlDyn7qSwVJv7XERS8K8';
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        document.addEventListener('DOMContentLoaded', cargarBaseDeDatos);
+
+        async function procesarRegistro() {
+            const nombre = document.getElementById('inputNombre').value.toUpperCase();
+            const cedula = document.getElementById('inputCedula').value;
+            const rango = document.getElementById('inputRango').value.toUpperCase();
+            const numCarnet = document.getElementById('inputNumCarnet').value; // Nuevo Campo
+            
+            const btn = document.getElementById('btnGenerar');
+            const msg = document.getElementById('mensaje-estado');
+
+            if(!nombre || !cedula || !rango || !numCarnet) { 
+                alert("Por favor complete todos los campos, incluido el N° de Carnet"); 
+                return; 
+            }
+
+            // Visualizar
+            document.getElementById('verNombre').innerText = nombre;
+            document.getElementById('verCedula').innerText = cedula;
+            document.getElementById('verRango').innerText = rango;
+            document.getElementById('verNumCarnetBadge').innerText = "N° " + numCarnet; // Mostrar badge
+
+            document.getElementById('vistaCarnet').style.display = "block";
+
+            // Generar QR con el nuevo dato en la URL
+            let rutaBase = window.location.href;
+            if(rutaBase.endsWith('index.html')) rutaBase = rutaBase.replace('index.html', 'perfil.html');
+            else if(rutaBase.endsWith('/')) rutaBase += 'perfil.html';
+            else rutaBase += '/perfil.html';
+
+            // Agregamos &num_carnet= al final
+            const enlaceFinal = `${rutaBase}?nombre=${encodeURIComponent(nombre)}&cedula=${encodeURIComponent(cedula)}&rango=${encodeURIComponent(rango)}&num_carnet=${encodeURIComponent(numCarnet)}`;
+
+            const contenedorQR = document.getElementById("contenedor-qr");
+            contenedorQR.innerHTML = "";
+            new QRCode(contenedorQR, { text: enlaceFinal, width: 90, height: 90, colorDark : "#0a2342", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
+
+            // Guardar en Supabase
+            btn.disabled = true;
+            btn.innerText = "Procesando...";
+            msg.innerText = "Guardando...";
+
+            try {
+                // Importante: Aquí enviamos 'numero_carnet' a la base de datos
+                const { data, error } = await _supabase
+                    .from('registros')
+                    .insert([
+                        { nombre: nombre, cedula: cedula, rango: rango, numero_carnet: numCarnet }
+                    ]);
+
+                if (error) throw error;
+
+                msg.style.color = "green";
+                msg.innerText = "¡Registro guardado exitosamente!";
+                cargarBaseDeDatos(); 
+                
+            } catch (error) {
+                console.error("Error Supabase:", error);
+                msg.style.color = "red";
+                msg.innerText = "Error: Verifica haber creado la columna 'numero_carnet' en Supabase.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "EMITIR Y GUARDAR";
+            }
+        }
+
+        async function cargarBaseDeDatos() {
+            const tabla = document.querySelector('#tablaHistorial tbody');
+            const { data, error } = await _supabase
+                .from('registros')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (error || !data) return;
+
+            tabla.innerHTML = "";
+            data.forEach(registro => {
+                const fecha = new Date(registro.created_at).toLocaleDateString();
+                const fila = `
+                    <tr>
+                        <td style="font-weight:bold; color: #0a2342;">${registro.numero_carnet || 'N/A'}</td>
+                        <td>${registro.nombre}</td>
+                        <td style="color:#888; font-size:10px;">${fecha}</td>
+                    </tr>
+                `;
+                tabla.innerHTML += fila;
+            });
+        }
+    </script>
+</body>
+</html>
